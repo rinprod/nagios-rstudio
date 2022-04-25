@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""
+A tool for integrating RStudio products into Nagios
+"""
+
+import argparse
+import sys
+import urllib.request
+
+
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument("-H", "--hostname", help="Hostname of the system to check")
+PARSER.add_argument("-w", "--warning", help="Warning threshold", default=40)
+PARSER.add_argument("-c", "--critical", help="Critical threshold", default=70)
+PARSER.add_argument("-p", "--product", help="RStudio product")
+PARSER.add_argument("-P", "--path", help="set a url path", default="")
+PARSER.add_argument("-n", "--number", help="Number of repeats", default=5)
+PARSER.add_argument(
+    "-D", "--dryrun", help="Don't perform the check", action="store_true"
+)
+PARSER.add_argument(
+    "-i", "--insecure", help="use http instead of https", action="store_true"
+)
+PARSER.add_argument("-t", "--timeout", help="timeout in seconds", default=5)
+
+# Add a debug flag
+PARSER.add_argument("-d", "--debug", help="enable debug mode", action="store_true")
+
+ARGV = PARSER.parse_args()
+
+
+def debug_msg(*args):
+    """prints the message if the debug option is set"""
+    if ARGV.debug:
+        print("DEBUG: {}".format("".join(args)))
+
+
+debug_msg("Debug option is set")
+
+
+# RStudio workbench docs on the health-check endpoint
+# https://docs.rstudio.com/ide/server-pro/auditing_and_monitoring/server_health_checks.html
+
+PRODUCT_PING = {
+    "workbench": "health-check",
+    "connect": "__ping__",
+    "packagemanager": "__ping__",
+    "custom": "",
+}
+
+if ARGV.insecure is True:
+    TRANSPORT = "http:/"
+else:
+    TRANSPORT = "https:/"
+
+try:
+    PRODUCT_HEATHCHECK_ENDPOINT = PRODUCT_PING[ARGV.product]
+except KeyError:
+    print("UNKNOWN - invalid product specified")
+    sys.exit(3)
+
+
+URL_COMPONENTS = [
+    TRANSPORT,
+    ARGV.hostname,
+    ARGV.path,
+    PRODUCT_HEATHCHECK_ENDPOINT,
+]
+
+FULL_URL = "/".join(URL_COMPONENTS)
+debug_msg("FULL_URL is: {}".format(FULL_URL))
+
+if ARGV.dryrun is True:
+    print("UNKNOWN: DRYRUN COMPLETE", file=sys.stderr)
+    sys.exit(3)
+
+try:
+    TIMEOUT = int(ARGV.timeout)
+except ValueError:
+    print("UNKNOWN: timeout should be an integer, not a string")
+    sys.exit(3)
+
+req = urllib.request.Request(FULL_URL)
+try:
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as response:
+        # the_page = response.read()
+        product_status = response.status
+except urllib.error.HTTPError as err:
+    print("CRITICAL: {}".format(err))
+    sys.exit(2)
+
+if product_status == 200:
+    print("OK: Status endpoint is reachable")
+    sys.exit(0)
+else:
+    print("CRITICAL: Status endpoint not reachable")
+    sys.exit(3)
+
+
+# Nagios output codes
+# OK - exit 0
+# "OK - $countWarnings services in Warning state"
+#
+# WARNING - exit 1
+# echo "WARNING - $countWarnings services in Warning state"
+#
+# CRITICAL - exit 2
+# echo "CRITICAL - $countWarnings services in Warning state"
+#
+# UNKNOWN - exit 3
+# echo "UNKNOWN - $countWarnings"
+#
+
+print("UNKNOWN: An unhandled error has occured")
+sys.exit(3)
