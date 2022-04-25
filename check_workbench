@@ -41,7 +41,7 @@ debug_msg("Debug option is set")
 # RStudio workbench docs on the health-check endpoint
 # https://docs.rstudio.com/ide/server-pro/auditing_and_monitoring/server_health_checks.html
 
-AVAILABLE_ITEMS = [
+AVAILABLE_OPTIONS = [
     "active-sessions",
     "idle-seconds",
     "cpu-percent",
@@ -53,7 +53,7 @@ AVAILABLE_ITEMS = [
     "license-allow-product-usage",
 ]
 
-if ARGV.option not in AVAILABLE_ITEMS:
+if ARGV.option not in AVAILABLE_OPTIONS:
     print("UNKNOWN: Invalid option")
     sys.exit(3)
 
@@ -121,32 +121,6 @@ if COUNTDOWN is True:
         print("CRITICAL: {} is {}".format(ARGV.option, config["DEFAULT"][ARGV.option]))
         sys.exit(2)
 
-
-# RStudio Workbench health-check example
-# active-sessions: 1
-# idle-seconds: 0
-# cpu-percent: 0.0
-# memory-percent: 64.2
-# swap-percent: 0.0
-# load-average: 4.1
-# license-status: Activated
-# license-days-left: 153
-# license-allow-product-usage: 1
-
-
-# Nagios output codes
-# OK - exit 0
-# "OK - $countWarnings services in Warning state"
-#
-# WARNING - exit 1
-# echo "WARNING - $countWarnings services in Warning state"
-#
-# CRITICAL - exit 2
-# echo "CRITICAL - $countWarnings services in Warning state"
-#
-# UNKNOWN - exit 3
-# echo "UNKNOWN - $countWarnings"
-#
 
 print("UNKNOWN: An unhandled error has occured")
 sys.exit(3)
