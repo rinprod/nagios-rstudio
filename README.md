@@ -1,5 +1,7 @@
 # RStudio Nagios Plugins
 
+<!-- DO NOT EDIT README.md - auto-generated from README.qmd -->
+
 ## Check RStudio products
 
 Runs simple product availability checks on all products.
